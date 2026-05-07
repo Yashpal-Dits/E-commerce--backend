@@ -1,62 +1,96 @@
-import { categoryRepository } from "../repositories/CategoryRepository";
+import { Response } from "express";
+import { categoryService } from "../services/CategoryService";
+import { asyncHandler } from "../utils/asyncHandler";
+import { sendResponse } from "../utils/response";
+import {
+  AuthRequest,
+  CategoryData,
+  CreateCategoryRequestBody,
+  UpdateCategoryRequestBody,
+} from "../types";
 import { ApiError } from "../utils/ApiError";
-import { CategoryData } from "../types";
 
-export class CategoryService {
-  async createCategory(data: {
-    name: string;
-    description?: string;
-  }): Promise<CategoryData> {
-    const existingCategory = await categoryRepository.findByName(data.name);
-    if (existingCategory) {
-      throw new ApiError(400, "A category with this name already exists");
+export class CategoryController {
+  create = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const body = req.body as CreateCategoryRequestBody;
+
+    if (!body.name) {
+      throw new ApiError(400, "Category name is required");
     }
 
-    const category = await categoryRepository.create(data);
-    return category;
-  }
+    const category = await categoryService.createCategory({
+      name: body.name,
+      description: body.description,
+    });
 
-  async getAllCategories(): Promise<CategoryData[]> {
-    return await categoryRepository.findAll();
-  }
+    return sendResponse<CategoryData>(
+      res,
+      201,
+      "Category created successfully",
+      category
+    );
+  });
 
-  async getCategoryById(id: number): Promise<CategoryData> {
-    const category = await categoryRepository.findById(id);
-    if (!category) {
-      throw new ApiError(404, "Category not found ");
+  getAll = asyncHandler(async (_req: AuthRequest, res: Response) => {
+    const categories = await categoryService.getAllCategories();
+
+    return sendResponse<CategoryData[]>(
+      res,
+      200,
+      "Categories retrieved successfully",
+      categories
+    );
+  });
+
+  getById = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const id = (req as any).numericId;
+
+    const category = await categoryService.getCategoryById(id);
+
+    return sendResponse<CategoryData>(
+      res,
+      200,
+      "Category retrieved successfully",
+      category
+    );
+  });
+
+  update = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const id = (req as any).numericId;
+    const body = req.body as UpdateCategoryRequestBody;
+
+    if (!body.name && !body.description) {
+      throw new ApiError(400, "At least one field is required");
     }
 
-    return category;
-  }
+    const updatedCategory = await categoryService.updateCategory(id, {
+      name: body.name,
+      description: body.description,
+    });
 
-  async updateCategory(
-    id: number,
-    data: {
-      name?: string;
-      description?: string;
-    }
-  ): Promise<CategoryData | null> {
-    await this.getCategoryById(id);
-
-    if (data.name) {
-      const existingCategory = await categoryRepository.findByName(data.name);
-      if (existingCategory && existingCategory.id !== id) {
-        throw new ApiError(400, "A category with this name already exists");
-      }
-    }
-
-    const updated = await categoryRepository.update(id, data);
-    return updated;
-  }
-
-  async deleteCategory(id: number): Promise<{ message: string }> {
-    const deleted = await categoryRepository.delete(id);
-    if (!deleted) {
+    if (!updatedCategory) {
       throw new ApiError(404, "Category not found");
     }
 
-    return { message: "Category deleted successfully" };
-  }
+    return sendResponse<CategoryData>(
+      res,
+      200,
+      "Category updated successfully",
+      updatedCategory
+    );
+  });
+
+  delete = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const id = (req as any).numericId;
+
+    const result = await categoryService.deleteCategory(id);
+
+    return sendResponse(
+      res,
+      200,
+      result.message
+    );
+  });
 }
 
-export const categoryService = new CategoryService();
+export const categoryController = new CategoryController();
