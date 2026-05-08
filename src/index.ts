@@ -19,8 +19,8 @@ app.get("/health", (_req: Request, res: Response) => {
   });
 });
 
-app.use("/api", routes);
 
+app.use("/api", routes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 

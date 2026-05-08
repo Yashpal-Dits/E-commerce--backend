@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request } from "express";
 import { JwtPayload } from "../utils/jwt";
 
 export interface AuthRequest extends Request {
@@ -11,7 +11,7 @@ export interface RegisterRequestBody {
   last_name: string;
   email: string;
   password: string;
-  role?: string;
+  role?: "customer" | "seller" |"admin";
 }
 
 export interface LoginRequestBody {

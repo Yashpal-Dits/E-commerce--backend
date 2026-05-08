@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyToken, JwtPayload } from "../utils/jwt";
 import { ApiError } from "../utils/ApiError";
+import {Messages} from "../constants/messages";
 
 declare global {
   namespace Express {
@@ -10,7 +11,6 @@ declare global {
   }
 }
 
-// Verify JWT token and attach user to request
 export const authMiddleware = (
   req: Request,
   _res: Response,
@@ -20,12 +20,12 @@ export const authMiddleware = (
     const token = req.headers.authorization?.split(" ")[1];
 
     if (!token) {
-      throw new ApiError(401, "No token provided");
+      throw new ApiError(401, Messages.AUTH.NO_TOKEN);
     }
 
     const payload = verifyToken(token);
     if (!payload) {
-      throw new ApiError(401, "Invalid or expired token");
+      throw new ApiError(401, Messages.AUTH.INVALID_TOKEN);
     }
 
     req.user = payload;
@@ -35,7 +35,6 @@ export const authMiddleware = (
   }
 };
 
-// Ensure user is an admin
 export const adminMiddleware = (
   req: Request,
   _res: Response,
@@ -43,10 +42,10 @@ export const adminMiddleware = (
 ) => {
   try {
     if (!req.user) {
-      throw new ApiError(401, "User not authenticated");
+      throw new ApiError(401, Messages.AUTH.USER_NOT_AUTHENTICATED);
     }
     if (req.user.role !== "admin") {
-      throw new ApiError(403, "Admin access required");
+      throw new ApiError(403, Messages.AUTHORIZATION.ADMIN_REQUIRED);
     }
     next();
   } catch (error) {
@@ -54,7 +53,6 @@ export const adminMiddleware = (
   }
 };
 
-// Ensure user is a seller
 export const sellerMiddleware = (
   req: Request,
   _res: Response,
@@ -62,10 +60,10 @@ export const sellerMiddleware = (
 ) => {
   try {
     if (!req.user) {
-      throw new ApiError(401, "User not authenticated");
+      throw new ApiError(401, Messages.AUTH.USER_NOT_AUTHENTICATED);
     }
     if (req.user.role !== "seller") {
-      throw new ApiError(403, "Seller access required");
+      throw new ApiError(403, Messages.AUTHORIZATION.SELLER_REQUIRED);
     }
     next();
   } catch (error) {
@@ -73,7 +71,6 @@ export const sellerMiddleware = (
   }
 };
 
-// Ensure user is a customer
 export const customerMiddleware = (
   req: Request,
   _res: Response,
@@ -81,10 +78,10 @@ export const customerMiddleware = (
 ) => {
   try {
     if (!req.user) {
-      throw new ApiError(401, "User not authenticated");
+      throw new ApiError(401, Messages.AUTH.USER_NOT_AUTHENTICATED);
     }
     if (req.user.role !== "customer") {
-      throw new ApiError(403, "Customer access required");
+      throw new ApiError(403, Messages.AUTHORIZATION.CUSTOMER_REQUIRED);
     }
     next();
   } catch (error) {
@@ -92,22 +89,18 @@ export const customerMiddleware = (
   }
 };
 
-// Allow multiple roles (e.g., seller OR admin)
 export const hasAnyRole = (allowedRoles: string[]) => {
   return (req: Request, _res: Response, next: NextFunction) => {
     try {
       if (!req.user) {
-        throw new ApiError(401, "User not authenticated");
+        throw new ApiError(401, Messages.AUTH.USER_NOT_AUTHENTICATED);
       }
       if (!allowedRoles.includes(req.user.role)) {
-        throw new ApiError(
-          403,
-          `Access requires one of these roles: ${allowedRoles.join(", ")}`
-        );
+        throw new ApiError(403, Messages.AUTHORIZATION.ACCESS_DENIED);
       }
       next();
     } catch (error) {
       next(error);
     }
   };
-};
+};``

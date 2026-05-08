@@ -9,13 +9,14 @@ import {
   UpdateCategoryRequestBody,
 } from "../types";
 import { ApiError } from "../utils/ApiError";
+import {Messages} from "../constants/messages";
 
 export class CategoryController {
   create = asyncHandler(async (req: AuthRequest, res: Response) => {
     const body = req.body as CreateCategoryRequestBody;
 
     if (!body.name) {
-      throw new ApiError(400, "Category name is required");
+      throw new ApiError(400, Messages.VALIDATION.REQUIRED_FIELD);
     }
 
     const category = await categoryService.createCategory({
@@ -26,7 +27,7 @@ export class CategoryController {
     return sendResponse<CategoryData>(
       res,
       201,
-      "Category created successfully",
+      Messages.CATEGORY.CREATED,
       category
     );
   });
@@ -37,7 +38,7 @@ export class CategoryController {
     return sendResponse<CategoryData[]>(
       res,
       200,
-      "Categories retrieved successfully",
+      Messages.CATEGORY.RETRIEVED_ALL,
       categories
     );
   });
@@ -50,7 +51,7 @@ export class CategoryController {
     return sendResponse<CategoryData>(
       res,
       200,
-      "Category retrieved successfully",
+      Messages.CATEGORY.RETRIEVED,
       category
     );
   });
@@ -60,7 +61,7 @@ export class CategoryController {
     const body = req.body as UpdateCategoryRequestBody;
 
     if (!body.name && !body.description) {
-      throw new ApiError(400, "At least one field is required");
+      throw new ApiError(400, Messages.CATEGORY.AT_LEAST_ONE_FIELD);
     }
 
     const updatedCategory = await categoryService.updateCategory(id, {
@@ -69,13 +70,13 @@ export class CategoryController {
     });
 
     if (!updatedCategory) {
-      throw new ApiError(404, "Category not found");
+      throw new ApiError(404, Messages.CATEGORY.NOT_FOUND);
     }
 
     return sendResponse<CategoryData>(
       res,
       200,
-      "Category updated successfully",
+      Messages.CATEGORY.UPDATED,
       updatedCategory
     );
   });
@@ -88,7 +89,8 @@ export class CategoryController {
     return sendResponse(
       res,
       200,
-      result.message
+      Messages.CATEGORY.DELETED,
+      result
     );
   });
 }

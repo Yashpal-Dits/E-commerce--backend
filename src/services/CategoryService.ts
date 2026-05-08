@@ -1,56 +1,63 @@
 import { categoryRepository } from "../repositories/CategoryRepository";
 import { ApiError } from "../utils/ApiError";
+import { CategoryData } from "../types";
+import { Messages } from "../constants/messages";
 
 export class CategoryService {
     // Create a new category
-    async createCategory(data: { name: string; description?: string }) {
+    async createCategory(data: { name: string; description?: string }): Promise<CategoryData>{
        
         const existingCategory = await categoryRepository.findByName(data.name);
         if (existingCategory) {
-            throw new ApiError(400, "A category with this name already exists");
+            throw new ApiError(400, Messages.CATEGORY.ALREADY_EXISTS);
         }
-        return await categoryRepository.create(data);
-    }
-
-    // Get all categories
-    async getAllCategories() {
-        return await categoryRepository.findAll();
-    }
-
-    // Get a single category by ID
-    async getCategoryById(id: number) {
-        const category = await categoryRepository.findById(id);
-        if (!category) {
-            throw new ApiError(404, "Category not found");
-        }
+        const category = await categoryRepository.create(data);
         return category;
     }
 
-    // Update a category
-    async updateCategory(id: number, data: { name?: string; description?: string }) {
-       
-        await this.getCategoryById(id);
-
-  
-        if (data.name) {
-            const existingCategory = await categoryRepository.findByName(data.name);
-            if (existingCategory && existingCategory.id !== id) {
-                throw new ApiError(400, "A category with this name already exists");
-            }
-        }
-
-        return await categoryRepository.update(id, data);
+    // Get all categories
+    async getAllCategories() : Promise<CategoryData[]> {
+      return  await categoryRepository.findAll();
     }
 
-    // Delete a category
-    async deleteCategory(id: number) {
-        const deleted = await categoryRepository.delete(id);
-        if (!deleted) {
-            throw new ApiError(404, "Category not found");
-        }
-        return { message: "Category deleted successfully" };
+    // Get a single category by ID
+    async getCategoryById(id: number): Promise<CategoryData> {
+    const category = await categoryRepository.findById(id);
+    if (!category) {
+      throw new ApiError(404, Messages.CATEGORY.NOT_FOUND);
     }
+
+    return category;
+  }
+
+  async updateCategory(
+    id: number,
+    data: {
+      name?: string;
+      description?: string;
+    }
+  ): Promise<CategoryData | null> {
+    await this.getCategoryById(id);
+
+    if (data.name) {
+      const existingCategory = await categoryRepository.findByName(data.name);
+      if (existingCategory && existingCategory.id !== id) {
+        throw new ApiError(400, Messages.CATEGORY.ALREADY_EXISTS);
+      }
+    }
+
+    const updated = await categoryRepository.update(id, data);
+    return updated;
+  }
+
+  async deleteCategory(id: number): Promise<{ message: string }> {
+    const deleted = await categoryRepository.delete(id);
+    if (!deleted) {
+      throw new ApiError(404, Messages.CATEGORY.NOT_FOUND);
+    }
+
+    return { message: Messages.CATEGORY.DELETED };
+  }
 }
-
 
 export const categoryService = new CategoryService();

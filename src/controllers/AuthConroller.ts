@@ -2,25 +2,38 @@ import { Response, NextFunction } from "express";
 import { userService } from "../services/UserService";
 import { sendResponse } from "../utils/response";
 import { asyncHandler } from "../utils/asyncHandler";
-import { AuthRequest, AuthResponseData, ProfileResponseData } from "../types";
+import {
+  AuthRequest,
+  AuthResponseData,
+  ProfileResponseData,
+  RegisterRequestBody,
+  LoginRequestBody,
+  UpdateProfileRequestBody
+} from "../types";
+import { ApiError } from "../utils";
+import { Messages } from "../constants/messages";
+import { UserRole } from "../entities";
 
 export class AuthController {
   register = asyncHandler(
     async (req: AuthRequest, res: Response, _next: NextFunction) => {
-      const { first_name, last_name, email, password, role } = req.body;
+      const body = req.body as RegisterRequestBody;
+      if (!body.first_name || !body.last_name || !body.email || !body.password) {
+        throw new ApiError(400, Messages.VALIDATION.REQUIRED_FIELD)
+      }
 
       const result = await userService.register({
-        first_name,
-        last_name,
-        email,
-        password,
-        role,
+        first_name: body.first_name,
+        last_name: body.last_name,
+        email: body.email,
+        password: body.password,
+        role: body.role as UserRole | undefined,
       });
 
       return sendResponse<AuthResponseData>(
         res,
         201,
-        "User registered successfully",
+        Messages.AUTH.RESISTER_SUCCESS,
         result
       );
     }
@@ -28,20 +41,24 @@ export class AuthController {
 
   login = asyncHandler(
     async (req: AuthRequest, res: Response, _next: NextFunction) => {
-      const { email, password } = req.body;
+      const body = req.body as LoginRequestBody;
 
-      const result = await userService.login(email, password);
+      if (!body.email || !body.password) {
+        throw new ApiError(400, Messages.VALIDATION.REQUIRED_FIELD);
+      }
+
+      const result = await userService.login(body.email, body.password);
 
       return sendResponse<AuthResponseData>(
         res,
         200,
-        "Login successful",
+        Messages.AUTH.LOGIN_SUCCESS,
         result
       );
     }
   );
 
-  getProfile = asyncHandler(
+   getProfile = asyncHandler(
     async (req: AuthRequest, res: Response, _next: NextFunction) => {
       const userId = req.user!.id;
 
@@ -50,7 +67,7 @@ export class AuthController {
       return sendResponse<ProfileResponseData>(
         res,
         200,
-        "Profile retrieved successfully",
+        Messages.AUTH.PROFILE_RETRIEVED,
         { user }
       );
     }
@@ -59,18 +76,18 @@ export class AuthController {
   updateProfile = asyncHandler(
     async (req: AuthRequest, res: Response, _next: NextFunction) => {
       const userId = req.user!.id;
-      const { first_name, last_name, email } = req.body;
+      const body = req.body as UpdateProfileRequestBody;
 
       const user = await userService.updateProfile(userId, {
-        first_name,
-        last_name,
-        email,
+        first_name: body.first_name,
+        last_name: body.last_name,
+        email: body.email,
       });
 
       return sendResponse<ProfileResponseData>(
         res,
         200,
-        "Profile updated successfully",
+        Messages.AUTH.PROFILE_UPDATED,
         { user }
       );
     }
